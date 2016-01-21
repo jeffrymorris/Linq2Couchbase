@@ -1,17 +1,15 @@
-﻿    using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
+using Couchbase.Configuration.Client;
 using Couchbase.Core;
 
 namespace Couchbase.Linq
 {
-    public class QueryFactory
+    internal class QueryFactory
     {
-        public static BucketQueryable<T> Queryable<T>(IBucket bucket)
+        public static IQueryable<T> Queryable<T>(IBucket bucket)
         {
-            return new BucketQueryable<T>(bucket);
-        } 
+            //TODO refactor so ClientConfiguration is injectable
+            return new BucketQueryable<T>(bucket, new ClientConfiguration(), false);
+        }
     }
 }
