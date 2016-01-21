@@ -120,6 +120,7 @@
     <Compile Include="QueryGeneration\LinqQueryRequestTests.cs" />
     <Compile Include="QueryGeneration\MethodCallTranslators\KeyMethodCallTranslatorTests.cs" />
     <Compile Include="QueryGeneration\SelectDocumentMetadataTests.cs" />
+    <Compile Include="Proxies\IgnoreProxyFieldContractResolverTests.cs" />
     <Compile Include="QueryGeneration\UnionTests.cs" />
     <Compile Include="QueryGeneration\ArrayOperatorTests.cs" />
     <Compile Include="QueryGeneration\EnumTests.cs" />
@@ -170,7 +171,7 @@
     </PropertyGroup>
     <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
   </Target>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>
