@@ -50,7 +50,7 @@ namespace Couchbase.Linq.Proxies
 
             // Only proxy setters for properties on the document
 
-            return methodInfo.IsSpecialName && methodInfo.Name.StartsWith("set_");
+            return methodInfo.IsSpecialName && methodInfo.Name.StartsWith("set_") || methodInfo.Name.StartsWith("get_");
         }
     }
 }

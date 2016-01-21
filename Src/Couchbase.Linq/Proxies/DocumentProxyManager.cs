@@ -79,11 +79,12 @@ namespace Couchbase.Linq.Proxies
         /// node changes.
         /// </summary>
         /// <param name="documentType">Type of document to proxy.</param>
+        /// <param name="context">The context for handling mutations on changed proxies./</param>
         /// <returns>New instance of a proxy implementing <see cref="ITrackedDocumentNode"/>.</returns>
-        public virtual object CreateProxy(Type documentType)
+        public virtual object CreateProxy(Type documentType, IChangeTrackableContext context)
         {
             return ProxyGenerator.CreateClassProxy(documentType, InterfacesToProxy, Options,
-                    new DocumentProxyInterceptor());
+                    new DocumentProxyInterceptor(context));
         }
     }
 }

@@ -89,6 +89,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ChangeTrackableContext.cs" />
     <Compile Include="Clauses\UseKeysExpressionNode.cs" />
     <Compile Include="Clauses\UseKeysClause.cs" />
     <Compile Include="BucketContext.cs" />
@@ -110,6 +111,7 @@
     <Compile Include="Proxies\DocumentProxyGenerationHook.cs" />
     <Compile Include="Proxies\DocumentProxyInterceptor.cs" />
     <Compile Include="Proxies\DocumentProxyManager.cs" />
+    <Compile Include="Proxies\IgnoreProxyFieldContractResolver.cs" />
     <Compile Include="Proxies\ITrackedDocumentNode.cs" />
     <Compile Include="Proxies\ITrackedDocumentNodeCallback.cs" />
     <Compile Include="QueryGeneration\Expressions\StringComparisonExpression.cs" />

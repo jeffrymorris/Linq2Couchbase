@@ -31,7 +31,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
             // Act/Assert
 
             // ReSharper disable once ObjectCreationAsStatement
-            Assert.Throws<NotSupportedException>(() => new DocumentProxyDataMapper(configuration));
+            Assert.Throws<NotSupportedException>(() => new DocumentProxyDataMapper(configuration, new Mock<IChangeTrackableContext>().Object));
         }
 
         [Test]
@@ -53,7 +53,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
             // Act/Assert
 
             // ReSharper disable once ObjectCreationAsStatement
-            Assert.Throws<NotSupportedException>(() => new DocumentProxyDataMapper(configuration));
+            Assert.Throws<NotSupportedException>(() => new DocumentProxyDataMapper(configuration, new Mock<IChangeTrackableContext>().Object));
         }
 
         [Test]
@@ -66,7 +66,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
                 Serializer = () => new FakeSerializer()
             };
 
-            var dataMapper = new DocumentProxyDataMapper(configuration);
+            var dataMapper = new DocumentProxyDataMapper(configuration, new Mock<IChangeTrackableContext>().Object);
 
             // Act
 
@@ -88,7 +88,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
                 Serializer = () => new FakeSerializer()
             };
 
-            var dataMapper = new DocumentProxyDataMapper(configuration);
+            var dataMapper = new DocumentProxyDataMapper(configuration, new Mock<IChangeTrackableContext>().Object);
 
             // Act
 
@@ -98,6 +98,28 @@ namespace Couchbase.Linq.UnitTests.Proxies
 
             // ReSharper disable once SuspiciousTypeConversion.Global
             Assert.True(result.Rows.All(p => !((ITrackedDocumentNode)p).IsDeserializing));
+        }
+
+        [Test]
+        public void BucketContext_Is_Not_Null()
+        {
+            // Arrange
+
+            var configuration = new ClientConfiguration()
+            {
+                Serializer = () => new FakeSerializer()
+            };
+
+            var dataMapper = new DocumentProxyDataMapper(configuration, new Mock<IChangeTrackableContext>().Object);
+
+            // Act
+
+            var result = dataMapper.Map<QueryResult<Document>>(null);
+
+            // Assert
+
+            // ReSharper disable once SuspiciousTypeConversion.Global
+            Assert.True(result.Rows.All(p => ((ITrackedDocumentNode)p).Context != null));
         }
 
         #region Helpers
@@ -123,9 +145,10 @@ namespace Couchbase.Linq.UnitTests.Proxies
 
             public T Deserialize<T>(Stream stream)
             {
+                var context = new Mock<IChangeTrackableContext>().Object;
                 var result = new QueryResult<Document>();
-                result.Rows.Add((Document) DocumentProxyManager.Default.CreateProxy(typeof (Document)));
-                result.Rows.Add((Document)DocumentProxyManager.Default.CreateProxy(typeof(Document)));
+                result.Rows.Add((Document) DocumentProxyManager.Default.CreateProxy(typeof (Document), context));
+                result.Rows.Add((Document)DocumentProxyManager.Default.CreateProxy(typeof(Document), context));
 
                 // make the rows dirty
                 result.Rows[0].IntegerProperty = 1;

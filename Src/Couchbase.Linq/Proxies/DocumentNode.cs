@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using Castle.DynamicProxy;
+using Newtonsoft.Json;
 
 namespace Couchbase.Linq.Proxies
 {
@@ -13,9 +15,15 @@ namespace Couchbase.Linq.Proxies
     /// </summary>
     internal class DocumentNode : ITrackedDocumentNode, ITrackedDocumentNodeCallback
     {
+        public bool IsDeleted { get; set; }
+
         public bool IsDeserializing { get; set; }
+
         public bool IsDirty { get; set; }
+
         public string __id { get; set; }
+
+        public IChangeTrackableContext Context { get; set; }
 
         #region Child Document Tracking
 
@@ -197,6 +205,8 @@ namespace Couchbase.Linq.Proxies
 
                 // Set as dirty before triggering callbacks to prevent accidental infinite recursion
                 IsDirty = true;
+
+                Context.Track(this);
 
                 TriggerCallbacks();
             }

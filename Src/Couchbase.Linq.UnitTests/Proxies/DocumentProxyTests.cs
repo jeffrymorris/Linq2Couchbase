@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Couchbase.Linq.Proxies;
+using Moq;
 using NUnit.Framework;
 
 // ReSharper disable SuspiciousTypeConversion.Global
@@ -20,7 +21,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Act
 
-            var result = DocumentProxyManager.Default.CreateProxy(typeof (DocumentRoot));
+            var result = DocumentProxyManager.Default.CreateProxy(typeof (DocumentRoot), new Mock<IChangeTrackableContext>().Object);
 
             // Assert
 
@@ -32,7 +33,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Act
 
-            var result = Newtonsoft.Json.JsonConvert.SerializeObject(DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot)));
+            var result = Newtonsoft.Json.JsonConvert.SerializeObject(DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot), new Mock<IChangeTrackableContext>().Object));
 
             // Assert
 
@@ -44,8 +45,9 @@ namespace Couchbase.Linq.UnitTests.Proxies
         public void NoAction_IsNotDirty()
         {
             // Arrange
+            var context = new Mock<IChangeTrackableContext>().Object;
 
-            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot));
+            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot), context);
 
             // Act
 
@@ -61,7 +63,9 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot));
+            var context = new Mock<IChangeTrackableContext>().Object;
+
+            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot), context);
 
             document.StringProperty = "string";
 
@@ -81,7 +85,9 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot));
+            var context = new Mock<IChangeTrackableContext>().Object;
+
+            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot), context);
 
             ((ITrackedDocumentNode) document).IsDeserializing = true;
 
@@ -105,7 +111,9 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var document = (DocumentRoot) DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot));
+            var context = new Mock<IChangeTrackableContext>().Object;
+
+            var document = (DocumentRoot) DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot), context);
 
             // Act
 
@@ -122,8 +130,9 @@ namespace Couchbase.Linq.UnitTests.Proxies
         public void SetPropertyFromNullToNull_IsNotDirty()
         {
             // Arrange
+            var context = new Mock<IChangeTrackableContext>().Object;
 
-            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot));
+            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot), context);
 
             // Act
 
@@ -141,7 +150,9 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot));
+            var context = new Mock<IChangeTrackableContext>().Object;
+
+            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot), context);
 
             document.StringProperty = "string";
 
@@ -163,7 +174,9 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot));
+            var context = new Mock<IChangeTrackableContext>().Object;
+
+            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot), context);
 
             document.StringProperty = "string";
 
@@ -189,9 +202,11 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot));
+            var context = new Mock<IChangeTrackableContext>().Object;
 
-            document.ObjectProperty = (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof (SubDocument));
+            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot), context);
+
+            document.ObjectProperty = (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof (SubDocument), context);
 
             ((ITrackedDocumentNode)document).ClearStatus();
 
@@ -211,12 +226,14 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var originalSubDocument = (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof(SubDocument));
+            var context = new Mock<IChangeTrackableContext>().Object;
 
-            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot));
+            var originalSubDocument = (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof(SubDocument), context);
+
+            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot), context);
 
             document.ObjectProperty = originalSubDocument;
-            document.ObjectProperty = (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof(SubDocument));
+            document.ObjectProperty = (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof(SubDocument), context);
 
             ((ITrackedDocumentNode)document).ClearStatus();
 
@@ -236,9 +253,11 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot));
+            var context = new Mock<IChangeTrackableContext>().Object;
 
-            document.ObjectProperty = (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof(SubDocument));
+            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot), context);
+
+            document.ObjectProperty = (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof(SubDocument), context);
 
             document.ObjectProperty.IntegerProperty = 1;
 
@@ -258,9 +277,11 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot));
+            var context = new Mock<IChangeTrackableContext>().Object;
 
-            document.ObjectProperty = (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof(SubDocument));
+            var document = (DocumentRoot)DocumentProxyManager.Default.CreateProxy(typeof(DocumentRoot), context);
+
+            document.ObjectProperty = (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof(SubDocument), context);
 
             ((ITrackedDocumentNode)document.ObjectProperty).IsDeserializing = true;
 

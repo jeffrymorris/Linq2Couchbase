@@ -1,12 +1,18 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using Couchbase.Configuration.Client;
 using Couchbase.Core;
+using Couchbase.Core.Serialization;
 using Couchbase.Linq.Filters;
+using Couchbase.Linq.Proxies;
 using Couchbase.Linq.Utils;
+using Newtonsoft.Json;
 
 namespace Couchbase.Linq
 {
@@ -14,16 +20,19 @@ namespace Couchbase.Linq
     /// Provides a single point of entry to a Couchbase bucket which makes it easier to compose
     /// and execute queries and to group togather changes which will be submitted back into the bucket.
     /// </summary>
-    public class BucketContext : IBucketContext
+    public class BucketContext : IBucketContext, IChangeTrackableContext
     {
         private readonly IBucket _bucket;
-
         private readonly Dictionary<Type, PropertyInfo>_cachedKeyProperties = new Dictionary<Type, PropertyInfo>();
+        protected BucketConfiguration BucketConfig;
+        private readonly ConcurrentDictionary<string, object> _tracked = new ConcurrentDictionary<string, object>();
+        private readonly ConcurrentDictionary<string, object> _modified = new ConcurrentDictionary<string, object>();
+        private int _beginChangeTrackingCount = 0;
 
         /// <summary>
         /// If true, generate change tracking proxies for documents during deserialization.  Defaults to false for higher performance queries.
         /// </summary>
-        public virtual bool EnableChangeTracking { get; set; }
+        public bool ChangeTrackingEnabled { get; protected set; }
 
         /// <summary>
         /// Creates a new BucketContext for a given Couchbase bucket.
@@ -53,7 +62,7 @@ namespace Couchbase.Linq
         /// <returns><see cref="IQueryable{T}" /> which can be used to query the bucket.</returns>
         public IQueryable<T> Query<T>()
         {
-            return DocumentFilterManager.ApplyFilters(new BucketQueryable<T>(_bucket, Configuration, EnableChangeTracking));
+            return DocumentFilterManager.ApplyFilters(new BucketQueryable<T>(_bucket, Configuration, this));
         }
 
         /// <summary>
@@ -79,10 +88,17 @@ namespace Couchbase.Linq
         public void Save<T>(T document)
         {
             var id = GetDocumentId(document);
-            var result = _bucket.Upsert(id, document);
-            if (!result.Success)
+            if (ChangeTrackingEnabled)
             {
-                throw new CouchbaseWriteException(result);
+                _modified.AddOrUpdate(id, document, (k, v) => document);
+            }
+            else
+            {
+                var result = _bucket.Upsert(id, document);
+                if (!result.Success)
+                {
+                    throw new CouchbaseWriteException(result);
+                }
             }
         }
 
@@ -93,10 +109,20 @@ namespace Couchbase.Linq
         public void Remove<T>(T document)
         {
             var id = GetDocumentId(document);
-            var result = _bucket.Remove(id);
-            if (!result.Success)
+
+            if (ChangeTrackingEnabled)
             {
-                throw new CouchbaseWriteException(result);
+                var temp = (ITrackedDocumentNode) document;
+                temp.IsDeleted = true;
+                _modified.AddOrUpdate(id, document, (k, v) => document);
+            }
+            else
+            {
+                var result = _bucket.Remove(id);
+                if (!result.Success)
+                {
+                    throw new CouchbaseWriteException(result);
+                }
             }
         }
 
@@ -135,13 +161,34 @@ namespace Couchbase.Linq
         }
 
         /// <summary>
-        /// Begins change tracking for the current request. To complete and save the changes call <see cref="SubmitChanges" />. Note that
-        /// <see cref="EnableChangeTracking" /> must be set to true for change tracking to be enabled.
+        /// Begins change tracking for the current request. To complete and save the changes call <see cref="SubmitChanges" />.
         /// </summary>
         /// <exception cref="System.NotImplementedException"></exception>
         public void BeginChangeTracking()
         {
-            throw new NotImplementedException();
+            ChangeTrackingEnabled = true;
+            Interlocked.Increment(ref _beginChangeTrackingCount);
+        }
+
+        /// <summary>
+        /// Ends change tracking on the current context.
+        /// </summary>
+        public void EndChangeTracking()
+        {
+            ChangeTrackingEnabled = false;
+            Interlocked.Decrement(ref _beginChangeTrackingCount);
+
+            //release any tracked documents from change tracking
+            lock (_tracked)
+            {
+                foreach (var node in _tracked)
+                {
+                    var tracked = node.Value as ITrackedDocumentNode;
+                    var callback = tracked as ITrackedDocumentNodeCallback;
+                    if (tracked != null) tracked.UnregisterChangeTracking(callback);
+                }
+                _tracked.Clear();
+            }
         }
 
         /// <summary>
@@ -150,17 +197,76 @@ namespace Couchbase.Linq
         /// <exception cref="System.NotImplementedException"></exception>
         public void SubmitChanges()
         {
-            throw new NotImplementedException();
+            if (ChangeTrackingEnabled && _beginChangeTrackingCount == 0)
+            {
+                try
+                {
+                    foreach (var modified in _modified)
+                    {
+                        var doc = modified.Value as ITrackedDocumentNode;
+                        if (doc != null && doc.IsDeleted)
+                        {
+                            var result = _bucket.Remove(modified.Key);
+                            if (!result.Success)
+                            {
+                                throw new CouchbaseWriteException(result);
+                            }
+                        }
+                        else if (doc != null && doc.IsDirty)
+                        {
+                            var result = _bucket.Upsert(modified.Key, modified.Value);
+                            if (!result.Success)
+                            {
+                                throw new CouchbaseWriteException(result);
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    ChangeTrackingEnabled = false;
+                    _modified.Clear();
+                }
+            }
         }
 
-        /// <summary>
-        /// Flushes the changes.
-        /// </summary>
-        /// <exception cref="System.NotImplementedException"></exception>
-        public void FlushChanges()
+        void IChangeTrackableContext.Track<T>(T document)
         {
-            throw new NotImplementedException();
+            if (ChangeTrackingEnabled)
+            {
+                var id = GetDocumentId(document);
+
+                _tracked.AddOrUpdate(id, document, (k, v) => document);
+            }
         }
+
+        void IChangeTrackableContext.Untrack<T>(T document)
+        {
+            if (ChangeTrackingEnabled)
+            {
+                var id = GetDocumentId(document);
+
+                object temp;
+                if (_tracked.TryRemove(id, out temp))
+                {
+                    Console.WriteLine("removed {0}", id);
+                }
+            }
+        }
+
+        void IChangeTrackableContext.Modified<T>(T document)
+        {
+            if (ChangeTrackingEnabled)
+            {
+                var id = GetDocumentId(document);
+
+                _modified.AddOrUpdate(id, document, (k, v) => document);
+            }
+        }
+
+        public int ModifiedCount { get { return _modified.Count; } }
+
+        public int TrackedCount { get { return _tracked.Count; } }
     }
 }
 

@@ -1,17 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Castle.DynamicProxy;
+using Couchbase.Linq.Utils;
 
 namespace Couchbase.Linq.Proxies
 {
     internal class DocumentProxyInterceptor : IInterceptor
     {
         private readonly DocumentNode _documentNode = new DocumentNode();
+
+        public  DocumentProxyInterceptor(IChangeTrackableContext context)
+        {
+            _documentNode.Context = context;
+        }
 
         public void Intercept(IInvocation invocation)
         {
@@ -70,6 +77,12 @@ namespace Couchbase.Linq.Proxies
                 }
 
                 _documentNode.DocumentModified();
+
+                //modified
+                if (!_documentNode.IsDeserializing)
+                {
+                    _documentNode.Context.Modified(invocation.InvocationTarget);
+                }
             }
         }
     }

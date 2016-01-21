@@ -16,6 +16,13 @@ namespace Couchbase.Linq.Proxies
     /// </summary>
     internal class DocumentProxyTypeCreator : ICustomObjectCreator
     {
+        private readonly IChangeTrackableContext _context;
+
+        public DocumentProxyTypeCreator(IChangeTrackableContext context)
+        {
+            _context = context;
+        }
+
         public bool CanCreateObject(Type type)
         {
             if (type == null)
@@ -35,10 +42,18 @@ namespace Couchbase.Linq.Proxies
                 return false;
             }
 
-            if (type.GetInterfaces().Any(p => p.IsGenericType && (p.GetGenericTypeDefinition() == typeof(IQueryResult<>))))
+            var interfaces = type.GetInterfaces();
+
+            if (interfaces.Any(p => p.IsGenericType && (p.GetGenericTypeDefinition() == typeof(IQueryResult<>))))
             {
                 // Don't proxy the QueryResult<T> object
 
+                return false;
+            }
+
+            if (interfaces.Any(p => p.UnderlyingSystemType == typeof (IBucketContext)))
+            {
+                //don't proxy the context
                 return false;
             }
 
@@ -61,11 +76,11 @@ namespace Couchbase.Linq.Proxies
 
             if (IsProxyableCollection(type, out collectionType))
             {
-                document = Activator.CreateInstance(collectionType);
+                document = Activator.CreateInstance(collectionType, _context);
             }
             else
             {
-                document = DocumentProxyManager.Default.CreateProxy(type);
+                document = DocumentProxyManager.Default.CreateProxy(type, _context);
             }
 
             ((ITrackedDocumentNode)document).IsDeserializing = true;

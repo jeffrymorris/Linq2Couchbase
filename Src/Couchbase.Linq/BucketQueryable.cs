@@ -15,6 +15,7 @@ namespace Couchbase.Linq
     internal class BucketQueryable<T> : QueryableBase<T>, IBucketQueryable<T>
     {
         private readonly IBucket _bucket;
+        private readonly IBucketContext _bucketContext;
 
         /// <summary>
         /// Bucket query is run against
@@ -58,17 +59,18 @@ namespace Couchbase.Linq
         /// </summary>
         /// <param name="bucket">The bucket.</param>
         /// <param name="configuration">The configuration.</param>
-        /// <param name="enableProxyGeneration">If true, generate change tracking proxies for documents during deserialization.</param>
+        /// <param name="bucketContext">The context object for tracking and managing changes to documents.</param>
         /// <exception cref="System.ArgumentNullException">bucket</exception>
         /// <exception cref="ArgumentNullException"><paramref name="bucket" /> is <see langword="null" />.</exception>
-        public BucketQueryable(IBucket bucket, ClientConfiguration configuration, bool enableProxyGeneration)
-            : base(QueryParserHelper.CreateQueryParser(), new BucketQueryExecutor(bucket, configuration, enableProxyGeneration))
+        public BucketQueryable(IBucket bucket, ClientConfiguration configuration, IBucketContext bucketContext)
+            : base(QueryParserHelper.CreateQueryParser(), new BucketQueryExecutor(bucket, configuration, bucketContext))
         {
             if (bucket == null)
             {
                 throw new ArgumentNullException("bucket");
             }
             _bucket = bucket;
+            _bucketContext = bucketContext;
         }
     }
 }

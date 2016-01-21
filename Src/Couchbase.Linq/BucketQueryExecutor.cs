@@ -21,7 +21,7 @@ namespace Couchbase.Linq
         private static readonly ILog Log = LogManager.GetLogger<BucketQueryExecutor>();
         private readonly IBucket _bucket;
         private readonly ClientConfiguration _configuration;
-        private readonly bool _enableProxyGeneration;
+        private readonly IBucketContext _bucketContext;
 
         public string BucketName
         {
@@ -33,7 +33,7 @@ namespace Couchbase.Linq
         /// </summary>
         public bool EnableProxyGeneration
         {
-            get { return _enableProxyGeneration; }
+            get { return _bucketContext.ChangeTrackingEnabled; }
         }
 
         /// <summary>
@@ -41,12 +41,12 @@ namespace Couchbase.Linq
         /// </summary>
         /// <param name="bucket"><see cref="IBucket"/> to query.</param>
         /// <param name="configuration"><see cref="ClientConfiguration"/> used during the query.</param>
-        /// <param name="enableProxyGeneration">If true, generate change tracking proxies for documents during deserialization.</param>
-        public BucketQueryExecutor(IBucket bucket, ClientConfiguration configuration, bool enableProxyGeneration)
+        /// <param name="bucketContext">The context object for tracking and managing changes to documents.</param>
+        public BucketQueryExecutor(IBucket bucket, ClientConfiguration configuration, IBucketContext bucketContext)
         {
             _bucket = bucket;
             _configuration = configuration;
-            _enableProxyGeneration = enableProxyGeneration;
+            _bucketContext = bucketContext;
         }
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace Couchbase.Linq
             if (generateProxies)
             {
                 // Proxy generation was requested, and the
-                queryRequest.DataMapper = new Proxies.DocumentProxyDataMapper(_configuration);
+                queryRequest.DataMapper = new Proxies.DocumentProxyDataMapper(_configuration, (IChangeTrackableContext)_bucketContext);
             }
 
             var result = _bucket.Query<T>(queryRequest);

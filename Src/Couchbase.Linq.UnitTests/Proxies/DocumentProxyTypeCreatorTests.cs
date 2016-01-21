@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Couchbase.Linq.Proxies;
+using Moq;
 using NUnit.Framework;
 
 namespace Couchbase.Linq.UnitTests.Proxies
@@ -18,7 +19,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var creator = new DocumentProxyTypeCreator();
+            var creator = new DocumentProxyTypeCreator(new Mock<IChangeTrackableContext>().Object);
 
             // Act
 
@@ -34,7 +35,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var creator = new DocumentProxyTypeCreator();
+            var creator = new DocumentProxyTypeCreator(new Mock<IChangeTrackableContext>().Object);
 
             // Act
 
@@ -50,7 +51,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var creator = new DocumentProxyTypeCreator();
+            var creator = new DocumentProxyTypeCreator(new Mock<IChangeTrackableContext>().Object);
 
             // Act
 
@@ -66,7 +67,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var creator = new DocumentProxyTypeCreator();
+            var creator = new DocumentProxyTypeCreator(new Mock<IChangeTrackableContext>().Object);
 
             // Act
 
@@ -86,7 +87,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var creator = new DocumentProxyTypeCreator();
+            var creator = new DocumentProxyTypeCreator(new Mock<IChangeTrackableContext>().Object);
 
             // Act
 
@@ -102,7 +103,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var creator = new DocumentProxyTypeCreator();
+            var creator = new DocumentProxyTypeCreator(new Mock<IChangeTrackableContext>().Object);
 
             // Act
 
@@ -118,7 +119,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var creator = new DocumentProxyTypeCreator();
+            var creator = new DocumentProxyTypeCreator(new Mock<IChangeTrackableContext>().Object);
 
             // Act
 

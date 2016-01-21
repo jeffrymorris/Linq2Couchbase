@@ -1,4 +1,6 @@
-﻿using Couchbase.Core;
+﻿using System.Linq;
+using Couchbase.Configuration.Client;
+using Couchbase.Core;
 using Couchbase.IO;
 using Couchbase.Linq.UnitTests.Documents;
 using Moq;
@@ -101,6 +103,107 @@ namespace Couchbase.Linq.UnitTests
            var ctx = new BucketContext(bucket.Object);
            Assert.Throws<KeyAttributeMissingException>(() => ctx.Remove(brewery));
        }
+
+        [Test]
+        public void BeginChangeTracking_ChangeTrackingEnabled_Is_True()
+        {
+            //arrange
+            var bucket = new Mock<IBucket>();
+            bucket.Setup(x => x.Configuration).Returns(new ClientConfiguration().BucketConfigs.First().Value);
+            var ctx = new BucketContext(bucket.Object);
+
+            //act
+            ctx.BeginChangeTracking();
+
+            //assert
+            Assert.IsTrue(ctx.ChangeTrackingEnabled);
+        }
+
+        [Test]
+        public void EndChangeTracking_ChangeTrackingEnabled_Is_False()
+        {
+            //arrange
+            var bucket = new Mock<IBucket>();
+            bucket.Setup(x => x.Configuration).Returns(new ClientConfiguration().BucketConfigs.First().Value);
+
+            var ctx = new BucketContext(bucket.Object);
+            ctx.BeginChangeTracking();
+
+            //act
+            ctx.EndChangeTracking();
+
+            //assert
+            Assert.IsFalse(ctx.ChangeTrackingEnabled);
+        }
+
+        [Test]
+        public void Save_Adds_New_Document_To_Modified_List()
+        {
+            //arrange
+            var bucket = new Mock<IBucket>();
+            bucket.Setup(x => x.Configuration).Returns(new ClientConfiguration().BucketConfigs.First().Value);
+
+            var ctx = new BucketContext(bucket.Object);
+            ctx.BeginChangeTracking();
+
+            var beer = new Beer
+            {
+                Name = "doc1" //key field
+            };
+
+            //act
+            ctx.Save(beer);
+
+            //assert
+            Assert.AreEqual(1, ctx.ModifiedCount);
+        }
+
+        [Test]
+        public void Save_Updates_Duplicate_Document_In_Modified_List()
+        {
+            //arrange
+            var bucket = new Mock<IBucket>();
+            bucket.Setup(x => x.Configuration).Returns(new ClientConfiguration().BucketConfigs.First().Value);
+
+            var ctx = new BucketContext(bucket.Object);
+            ctx.BeginChangeTracking();
+
+            var beer = new Beer
+            {
+                Name = "doc1" //key field
+            };
+            ctx.Save(beer);
+
+            //act
+            ctx.Save(beer);
+
+            //assert
+            Assert.AreEqual(1, ctx.ModifiedCount);
+        }
+
+        [Test]
+        public void SubmitChanges_Removes_Document_From_Modified_List()
+        {
+            //arrange
+            var bucket = new Mock<IBucket>();
+            bucket.Setup(x => x.Configuration).Returns(new ClientConfiguration().BucketConfigs.First().Value);
+
+            var ctx = new BucketContext(bucket.Object);
+            ctx.BeginChangeTracking();
+
+            var beer = new Beer
+            {
+                Name = "doc1" //key field
+            };
+
+            ctx.Save(beer);
+
+            //act
+            ctx.SubmitChanges();
+
+            //assert
+            Assert.AreEqual(0, ctx.ModifiedCount);
+        }
     }
 }
 

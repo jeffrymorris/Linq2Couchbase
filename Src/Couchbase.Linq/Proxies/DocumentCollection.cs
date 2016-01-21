@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Dynamic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,9 +18,16 @@ namespace Couchbase.Linq.Proxies
     {
         private readonly DocumentNode _documentNode = new DocumentNode();
 
+        public DocumentCollection(IChangeTrackableContext context)
+        {
+            _documentNode.Context = context;
+        }
+
         #region ITrackedDocumentNode
 
         // Redirect all ITrackedDocumentNode calls to the DocumentNode
+
+        public bool IsDeleted { get; set; }
 
         public bool IsDeserializing
         {
@@ -36,6 +45,13 @@ namespace Couchbase.Linq.Proxies
         {
             get { return _documentNode.__id; }
             set { _documentNode.__id = value; }
+        }
+
+        [IgnoreDataMember]
+        IChangeTrackableContext ITrackedDocumentNode.Context
+        {
+            get { return _documentNode.Context; }
+            set { _documentNode.Context = value; }
         }
 
         public void RegisterChangeTracking(ITrackedDocumentNodeCallback callback)

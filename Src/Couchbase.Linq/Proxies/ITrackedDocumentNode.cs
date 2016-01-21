@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -9,7 +10,13 @@ namespace Couchbase.Linq.Proxies
 {
     internal interface ITrackedDocumentNode
     {
+        [IgnoreDataMember]
+        bool IsDeleted { get; set; }
+
+        [IgnoreDataMember]
         bool IsDeserializing { get; set; }
+
+        [IgnoreDataMember]
         bool IsDirty { get; set; }
 
         /// <summary>
@@ -20,9 +27,14 @@ namespace Couchbase.Linq.Proxies
         /// on JsonProperty attributes for Newtonsoft.Json.
         /// </remarks>
         // ReSharper disable once InconsistentNaming
+        [IgnoreDataMember]
         string __id { get; set; }
 
+        [IgnoreDataMember]
+        IChangeTrackableContext Context { get; set; }
+
         void RegisterChangeTracking(ITrackedDocumentNodeCallback callback);
+
         void UnregisterChangeTracking(ITrackedDocumentNodeCallback callback);
 
         /// <summary>

@@ -58,10 +58,9 @@ namespace Couchbase.Linq.IntegrationTests
         [Test]
         public void Query_EnableProxyGeneration_ReturnsProxyBeer()
         {
-            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"))
-            {
-                EnableChangeTracking = true
-            };
+            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"));
+
+            db.BeginChangeTracking();
 
             var query = from x in db.Query<Beer>()
                         where x.Type == "beer"
@@ -79,10 +78,8 @@ namespace Couchbase.Linq.IntegrationTests
         [Test]
         public void Query_EnableProxyGeneration_ReturnsProxyBeerWithId()
         {
-            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"))
-            {
-                EnableChangeTracking = true
-            };
+            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"));
+            db.BeginChangeTracking();
 
             const string documentId = "21st_amendment_brewery_cafe-21a_ipa";
 
@@ -102,10 +99,9 @@ namespace Couchbase.Linq.IntegrationTests
         [Test]
         public void Query_EnableProxyGenerationChanges_FlagAsDirty()
         {
-            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"))
-            {
-                EnableChangeTracking = true
-            };
+            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"));
+
+            db.BeginChangeTracking();
 
             var query = from x in db.Query<Beer>()
                         where x.Type == "beer"
@@ -127,10 +123,9 @@ namespace Couchbase.Linq.IntegrationTests
         [Test]
         public void Query_EnableProxyGenerationChangesInSubDocuments_FlagAsDirty()
         {
-            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"))
-            {
-                EnableChangeTracking = true
-            };
+            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"));
+
+            db.BeginChangeTracking();
 
             var query = from x in db.Query<Brewery>()
                         where x.Type == "brewery" && N1QlFunctions.IsValued(x.Geo)
@@ -152,10 +147,9 @@ namespace Couchbase.Linq.IntegrationTests
         [Test]
         public void Query_EnableProxyGeneration_ReturnsProxyBreweryAddressCollection()
         {
-            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"))
-            {
-                EnableChangeTracking = true
-            };
+            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"));
+
+            db.BeginChangeTracking();
 
             var query = from x in db.Query<Brewery>()
                         where x.Type == "brewery"
@@ -174,10 +168,10 @@ namespace Couchbase.Linq.IntegrationTests
         [Test]
         public void Query_EnableProxyGenerationClearAddresses_FlagAsDirty()
         {
-            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"))
-            {
-                EnableChangeTracking = true
-            };
+            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"));
+
+            db.BeginChangeTracking();
+
 
             var query = from x in db.Query<Brewery>()
                         where x.Type == "brewery" && x.Address.Any()
@@ -198,10 +192,9 @@ namespace Couchbase.Linq.IntegrationTests
         [Test]
         public void Query_EnableProxyGenerationAddAddress_FlagAsDirty()
         {
-            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"))
-            {
-                EnableChangeTracking = true
-            };
+            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"));
+
+            db.BeginChangeTracking();
 
             var query = from x in db.Query<Brewery>()
                         where x.Type == "brewery" && x.Address.Any()
@@ -222,10 +215,9 @@ namespace Couchbase.Linq.IntegrationTests
         [Test]
         public void Query_EnableProxyGenerationRemoveAddress_FlagAsDirty()
         {
-            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"))
-            {
-                EnableChangeTracking = true
-            };
+            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"));
+
+            db.BeginChangeTracking();
 
             var query = from x in db.Query<Brewery>()
                         where x.Type == "brewery" && x.Address.Any()
@@ -246,10 +238,9 @@ namespace Couchbase.Linq.IntegrationTests
         [Test]
         public void Query_EnableProxyGenerationSetAddress_FlagAsDirty()
         {
-            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"))
-            {
-                EnableChangeTracking = true
-            };
+            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"));
+
+            db.BeginChangeTracking();
 
             var query = from x in db.Query<Brewery>()
                         where x.Type == "brewery" && x.Address.Any()
@@ -269,6 +260,54 @@ namespace Couchbase.Linq.IntegrationTests
 
         #endregion
 
+        [Test]
+        public void BeginChangeTracking_Clears_Modified_List()
+        {
+            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"));
+
+            db.BeginChangeTracking();
+
+            var query = from x in db.Query<Beer>()
+                        where x.Type == "beer"
+                        select x;
+
+            db.BeginChangeTracking();
+
+            var context = db as IChangeTrackableContext;
+
+            Assert.AreEqual(0, context.ModifiedCount);
+
+            var brewery = query.First();
+            brewery.Abv = 10;
+
+            Assert.AreEqual(1, context.ModifiedCount);
+
+            db.BeginChangeTracking();
+
+            Assert.AreEqual(0, context.ModifiedCount);
+        }
+
+
+        [Test]
+        public void Submit_Changes()
+        {
+            var db = new BucketContext(ClusterHelper.GetBucket("beer-sample"));
+
+            db.BeginChangeTracking();
+
+            var query = from x in db.Query<Beer>()
+                        where x.Type == "beer"
+                        select x;
+
+            db.BeginChangeTracking();
+
+            var brewery = query.First();
+
+            brewery.Abv = 10;
+
+
+            db.SubmitChanges();
+        }
     }
 }
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Couchbase.Linq.Proxies;
+using Moq;
 using NUnit.Framework;
 
 namespace Couchbase.Linq.UnitTests.Proxies
@@ -18,7 +19,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var collection = new DocumentCollection<SubDocument>();
+            var collection = new DocumentCollection<SubDocument>(new Mock<IChangeTrackableContext>().Object);
 
             // Act
 
@@ -34,7 +35,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var collection = new DocumentCollection<SubDocument>
+            var collection = new DocumentCollection<SubDocument>(new Mock<IChangeTrackableContext>().Object)
             {
                 new SubDocument()
             };
@@ -56,7 +57,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var collection = new DocumentCollection<SubDocument>
+            var collection = new DocumentCollection<SubDocument>(new Mock<IChangeTrackableContext>().Object)
             {
                 IsDeserializing = true
             };
@@ -82,7 +83,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var collection = new DocumentCollection<SubDocument>
+            var collection = new DocumentCollection<SubDocument>(new Mock<IChangeTrackableContext>().Object)
             {
                 new SubDocument()
             };
@@ -101,7 +102,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var collection = new DocumentCollection<SubDocument>
+            var collection = new DocumentCollection<SubDocument>(new Mock<IChangeTrackableContext>().Object)
             {
                 new SubDocument()
             };
@@ -124,7 +125,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var collection = new DocumentCollection<SubDocument>
+            var collection = new DocumentCollection<SubDocument>(new Mock<IChangeTrackableContext>().Object)
             {
                 new SubDocument()
             };
@@ -147,7 +148,7 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var collection = new DocumentCollection<SubDocument>
+            var collection = new DocumentCollection<SubDocument>(new Mock<IChangeTrackableContext>().Object)
             {
                 new SubDocument()
             };
@@ -173,10 +174,11 @@ namespace Couchbase.Linq.UnitTests.Proxies
         public void SetProperty_OnSubDocument_IsDirty()
         {
             // Arrange
+            var context = new Mock<IChangeTrackableContext>().Object;
 
-            var collection = new DocumentCollection<SubDocument>
+            var collection = new DocumentCollection<SubDocument>(context)
             {
-                (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof (SubDocument))
+                (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof (SubDocument), context)
             };
 
             collection.ClearStatus();
@@ -197,15 +199,17 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var originalDocument = (SubDocument) DocumentProxyManager.Default.CreateProxy(typeof (SubDocument));
+            var context = new Mock<IChangeTrackableContext>().Object;
 
-            var collection = new DocumentCollection<SubDocument>
+            var originalDocument = (SubDocument) DocumentProxyManager.Default.CreateProxy(typeof (SubDocument), context);
+
+            var collection = new DocumentCollection<SubDocument>(context)
             {
                 originalDocument
             };
 
             collection.RemoveAt(0);
-            collection.Add((SubDocument) DocumentProxyManager.Default.CreateProxy(typeof (SubDocument)));
+            collection.Add((SubDocument) DocumentProxyManager.Default.CreateProxy(typeof (SubDocument), context));
 
             collection.ClearStatus();
 
@@ -225,9 +229,11 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var collection = new DocumentCollection<SubDocument>
+            var context = new Mock<IChangeTrackableContext>().Object;
+
+            var collection = new DocumentCollection<SubDocument>(context)
             {
-                (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof (SubDocument))
+                (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof (SubDocument), context)
             };
 
             collection[0].IntegerProperty = 1;
@@ -249,9 +255,11 @@ namespace Couchbase.Linq.UnitTests.Proxies
         {
             // Arrange
 
-            var collection = new DocumentCollection<SubDocument>
+            var context = new Mock<IChangeTrackableContext>().Object;
+
+            var collection = new DocumentCollection<SubDocument>(context)
             {
-                (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof (SubDocument))
+                (SubDocument)DocumentProxyManager.Default.CreateProxy(typeof (SubDocument), context)
             };
 
             // ReSharper disable once SuspiciousTypeConversion.Global
